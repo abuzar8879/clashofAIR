@@ -1,0 +1,21 @@
+{
+  "name": "exam-platform-backend",
+  "version": "1.0.0",
+  "description": "Indian Competitive Exam Platform - Cloudflare Workers API",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute exam-platform-db --local --file=../database/schema.sql",
+    "db:seed": "wrangler d1 execute exam-platform-db --local --file=../database/seed.sql",
+    "db:reset": "wrangler d1 execute exam-platform-db --local --command='DROP TABLE IF EXISTS users; DROP TABLE IF EXISTS events; DROP TABLE IF EXISTS questions; DROP TABLE IF EXISTS registrations; DROP TABLE IF EXISTS submissions; DROP TABLE IF EXISTS answers; DROP TABLE IF EXISTS violations; DROP TABLE IF EXISTS refresh_tokens;'"
+  },
+  "dependencies": {
+    "@tsndr/cloudflare-worker-jwt": "^2.5.0",
+    "bcryptjs": "^2.4.3",
+    "hono": "^3.11.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.75.0"
+  }
+}
