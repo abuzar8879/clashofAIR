@@ -9,9 +9,8 @@ export default function Navbar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+  const [navOpen, setNavOpen] = useState(false)
   const menuRef = useRef(null)
-
-  const isActive = (path) => location.pathname === path ? 'active' : ''
 
   useEffect(() => {
     function handleClick(e) {
@@ -22,6 +21,11 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  useEffect(() => {
+    setNavOpen(false)
+    setMenuOpen(false)
+  }, [location.pathname])
 
   const handleLogout = () => {
     logout()
@@ -60,7 +64,7 @@ export default function Navbar() {
         gap: '4px',
         flex: 1,
         justifyContent: 'center',
-      }}>
+      }} className={`navbar-center-links${navOpen ? ' open' : ''}`}>
         {[
           { path: '/', label: 'Home' },
           { path: '/events', label: 'Tests' },
@@ -75,6 +79,7 @@ export default function Navbar() {
             background: location.pathname === path ? 'var(--bg-secondary)' : 'transparent',
             textDecoration: 'none',
             transition: 'color 0.15s, background 0.15s',
+            whiteSpace: 'nowrap',
           }}>
             {label}
           </Link>
@@ -83,6 +88,15 @@ export default function Navbar() {
 
       {/* Right side */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+        <button
+          type="button"
+          className="navbar-mobile-toggle"
+          onClick={() => setNavOpen(v => !v)}
+          aria-label="Toggle navigation"
+        >
+          <i className={`fa-solid ${navOpen ? 'fa-xmark' : 'fa-bars'}`}></i>
+        </button>
+
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}

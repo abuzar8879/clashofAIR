@@ -1,146 +1,181 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { eventsAPI } from '../utils/api.js'
 import EventCard from '../components/EventCard.jsx'
-import { formatDateTime } from '../utils/helpers.js'
+import { useAuth } from '../context/AuthContext.jsx'
+
+const EXAM_TRACKS = [
+  { code: 'JEE-MAINS', line: 'Engineering Entrance' },
+  { code: 'JEE-ADV', line: 'IIT Advanced' },
+  { code: 'NEET', line: 'Medical Entrance' },
+  { code: 'MHT-CET', line: 'State CET' },
+]
+
+const WORKFLOW = [
+  {
+    step: '01',
+    title: 'Create Profile',
+    desc: 'Set your aspirant type once and unlock exam-matched test recommendations.',
+  },
+  {
+    step: '02',
+    title: 'Attempt Under Pressure',
+    desc: 'Write timed tests with anti-cheat protection and realistic CBT exam behavior.',
+  },
+  {
+    step: '03',
+    title: 'Track Rank and Percentile',
+    desc: 'See live competition outcomes and your final standing after exam close.',
+  },
+]
 
 export default function Home() {
+  const { user, loading: authLoading } = useAuth()
   const [upcomingEvents, setUpcomingEvents] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    eventsAPI.getAll({ limit: 3 })
-      .then(res => setUpcomingEvents(res.data.events?.slice(0, 3) || []))
-      .catch(() => {})
+    eventsAPI.getAll({ limit: 6 })
+      .then(res => setUpcomingEvents(res.data.events || []))
+      .catch(() => setUpcomingEvents([]))
       .finally(() => setLoading(false))
   }, [])
 
+  const featuredEvents = useMemo(
+    () => upcomingEvents
+      .filter(event => event.status !== 'ended')
+      .slice(0, 3),
+    [upcomingEvents]
+  )
+
+  const secondaryHeroAction = useMemo(() => {
+    if (authLoading) return { to: '/events', label: 'Checking account...', disabled: true }
+    if (!user) return { to: '/register', label: 'Create Free Account' }
+    if (user.isAdmin) return { to: '/admin', label: 'Open Admin Dashboard' }
+    return { to: '/profile', label: 'View Profile' }
+  }, [authLoading, user])
+
+  const ctaAction = useMemo(() => {
+    if (authLoading) return { to: '/events', label: 'Loading account...', disabled: true }
+    if (user) return { to: '/events', label: 'Go to My Tests' }
+    return { to: '/register', label: 'Get Started Free' }
+  }, [authLoading, user])
+
   return (
-    <div>
-      {/* Hero Section */}
-      <section style={{
-        padding: '80px 20px 60px',
-        textAlign: 'center',
-        borderBottom: '1px solid var(--border)',
-        background: 'var(--bg)',
-      }}>
-        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-          <h1 style={{
-            fontSize: '44px',
-            fontWeight: '800',
-            letterSpacing: '-1px',
-            marginBottom: '16px',
-            color: 'var(--text)',
-          }}>
-            Compete. Learn. Rank.
-          </h1>
-          <p style={{
-            fontSize: '17px',
-            color: 'var(--text-secondary)',
-            lineHeight: 1.7,
-            marginBottom: '32px',
-          }}>
-            India's most realistic mock exam platform for JEE, NEET, MHT-CET, CAT & NEET-PG.
-            Experience the actual exam pressure, compete with thousands of aspirants, and track your percentile.
+    <main className="home-shell">
+      <section className="home-hero">
+        <div className="home-hero-glow home-hero-glow-one"></div>
+        <div className="home-hero-glow home-hero-glow-two"></div>
+        <div className="home-container">
+          <div className="home-badge-row">
+            <span className="home-badge">National Mock Platform</span>
+            {user && <span className="home-badge home-badge-soft">Welcome back, {user.username}</span>}
+          </div>
+          <h1 className="home-hero-title">Compete. Learn. Rank.</h1>
+          <p className="home-hero-subtitle">
+            High-fidelity mock exams for JEE-MAINS, JEE-ADV, NEET, and MHT-CET with
+            exam-like pressure, fair monitoring, and real percentile comparison.
           </p>
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <Link to="/events">
-              <button className="btn-primary" style={{ padding: '12px 28px', fontSize: '15px' }}>
-                Join Test <i className="fa-solid fa-arrow-right" style={{ fontSize: '12px', marginLeft: '4px' }}></i>
-              </button>
+          <div className="home-hero-actions">
+            <Link to="/events" className="btn-primary home-hero-btn">
+              Explore Live Tests <i className="fa-solid fa-arrow-right"></i>
             </Link>
-            <Link to="/register">
-              <button className="btn-secondary" style={{ padding: '12px 28px', fontSize: '15px' }}>
-                Register Free
-              </button>
-            </Link>
+            {secondaryHeroAction.disabled ? (
+              <span className="btn-secondary home-hero-btn home-hero-btn-disabled">
+                {secondaryHeroAction.label}
+              </span>
+            ) : (
+              <Link to={secondaryHeroAction.to} className="btn-secondary home-hero-btn">
+                {secondaryHeroAction.label}
+              </Link>
+            )}
           </div>
         </div>
       </section>
 
-      {/* Exam Categories */}
-      <section style={{ padding: '60px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', marginBottom: '32px' }}>
-            Supported Exams
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-            gap: '12px',
-          }}>
-            {[
-              { name: 'JEE Main', sub: 'Engineering' },
-              { name: 'NEET-UG', sub: 'Medical' },
-              { name: 'MHT-CET', sub: 'Maharashtra' },
-              { name: 'CAT', sub: 'Management' },
-              { name: 'NEET-PG', sub: 'PG Medical' },
-            ].map(({ name, sub }) => (
-              <div key={name} className="card" style={{ textAlign: 'center', padding: '20px 12px' }}>
-                <div style={{ fontSize: '20px', fontWeight: '800', marginBottom: '4px' }}>{name}</div>
-                <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{sub}</div>
-              </div>
+      <section className="home-section home-tracks">
+        <div className="home-container">
+          <div className="home-section-heading">
+            <h2>Supported Exam Tracks</h2>
+            <p>Built for the formats aspirants actually face.</p>
+          </div>
+          <div className="home-track-grid">
+            {EXAM_TRACKS.map(track => (
+              <article key={track.code} className="home-track-card">
+                <div className="home-track-code">{track.code}</div>
+                <div className="home-track-line">{track.line}</div>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section style={{ padding: '60px 20px', borderBottom: '1px solid var(--border)' }}>
-        <div style={{ maxWidth: '900px', margin: '0 auto' }}>
-          <h2 style={{ fontSize: '22px', fontWeight: '700', textAlign: 'center', marginBottom: '40px' }}>
-            How It Works
-          </h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-            gap: '24px',
-          }}>
-            {[
-              { step: '01', title: 'Register & Sign Up', desc: 'Create your account with your exam category — JEE, NEET, CAT, MHT-CET or NEET-PG.' },
-              { step: '02', title: 'Attempt Mock Exam', desc: 'Join scheduled mock tests in a realistic computer-based testing environment with timer and OMR.' },
-              { step: '03', title: 'Get Your Percentile', desc: 'See your score, percentile ranking, and position on the test leaderboard instantly after submission.' },
-            ].map(({ step, title, desc }) => (
-              <div key={step} className="card" style={{ textAlign: 'center', padding: '28px 20px' }}>
-                <div style={{
-                  width: '48px', height: '48px', borderRadius: '50%',
-                  background: 'var(--btn-bg)', color: 'var(--btn-text)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontWeight: '700', fontSize: '16px', margin: '0 auto 16px',
-                }}>
-                  {step}
-                </div>
-                <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>{title}</h3>
-                <p style={{ color: 'var(--text-secondary)', fontSize: '14px', lineHeight: 1.6 }}>{desc}</p>
-              </div>
+      <section className="home-section home-flow">
+        <div className="home-container">
+          <div className="home-section-heading">
+            <h2>How It Works</h2>
+            <p>A clear loop from preparation to measurable outcomes.</p>
+          </div>
+          <div className="home-flow-grid">
+            {WORKFLOW.map(item => (
+              <article key={item.step} className="home-flow-card">
+                <span className="home-flow-step">{item.step}</span>
+                <h3>{item.title}</h3>
+                <p>{item.desc}</p>
+              </article>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section style={{
-        padding: '60px 20px',
-        background: 'var(--btn-bg)',
-        textAlign: 'center',
-      }}>
-        <h2 style={{ color: 'var(--btn-text)', fontSize: '26px', fontWeight: '700', marginBottom: '12px' }}>
-          Ready to Test Your Preparation?
-        </h2>
-        <p style={{ color: 'var(--btn-text)', opacity: 0.8, marginBottom: '24px', fontSize: '15px' }}>
-          Join thousands of students competing on clashofAIR.
-        </p>
-        <Link to="/register">
-          <button style={{
-            padding: '12px 32px', fontSize: '15px', fontWeight: '600',
-            background: 'var(--btn-text)', color: 'var(--btn-bg)',
-            border: 'none', borderRadius: '4px', cursor: 'pointer',
-          }}>
-            Get Started Free
-          </button>
-        </Link>
+      <section className="home-section home-upcoming">
+        <div className="home-container">
+          <div className="home-upcoming-head">
+            <div className="home-section-heading">
+              <h2>Upcoming Tests</h2>
+              <p>Register early and lock your slot.</p>
+            </div>
+            <Link to="/events" className="home-view-all">View all</Link>
+          </div>
+
+          {loading ? (
+            <div className="loading" style={{ padding: '24px 0' }}>Loading upcoming tests...</div>
+          ) : featuredEvents.length === 0 ? (
+            <div className="empty-state home-empty-tight">
+              <h3>No upcoming tests right now</h3>
+              <p>We are scheduling new mocks. Check again soon.</p>
+            </div>
+          ) : (
+            <div className="events-grid">
+              {featuredEvents.map(event => (
+                <EventCard key={event.id} event={event} />
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
-    </div>
+      <section className="home-cta">
+        <div className="home-container">
+          <h2>Ready to Level Up Your Preparation?</h2>
+          <p>
+            {ctaAction.disabled
+              ? 'Finalizing your session and syncing your dashboard preferences.'
+              : user
+              ? 'Your next mock is waiting. Stay consistent and keep climbing.'
+              : 'Join thousands of aspirants practicing under real exam pressure.'}
+          </p>
+          {ctaAction.disabled ? (
+            <span className="btn-primary home-cta-btn home-cta-btn-disabled">
+              {ctaAction.label}
+            </span>
+          ) : (
+            <Link to={ctaAction.to} className="btn-primary home-cta-btn">
+              {ctaAction.label}
+            </Link>
+          )}
+        </div>
+      </section>
+    </main>
   )
 }

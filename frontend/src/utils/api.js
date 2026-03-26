@@ -70,6 +70,7 @@ export const examAPI = {
 export const resultsAPI = {
   getResult: (eventId) => api.get(`/result/${eventId}`),
   getLeaderboard: (eventId, params) => api.get(`/leaderboard/${eventId}`, { params }),
+  getMyResults: (limit = 5) => api.get('/my-results', { params: { limit } }),
 }
 
 // Admin APIs

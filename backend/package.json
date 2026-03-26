@@ -8,7 +8,8 @@
     "deploy": "wrangler deploy",
     "db:migrate": "wrangler d1 execute exam-platform-db --local --file=../database/schema.sql",
     "db:seed": "wrangler d1 execute exam-platform-db --local --file=../database/seed.sql",
-    "db:reset": "wrangler d1 execute exam-platform-db --local --command='DROP TABLE IF EXISTS users; DROP TABLE IF EXISTS events; DROP TABLE IF EXISTS questions; DROP TABLE IF EXISTS registrations; DROP TABLE IF EXISTS submissions; DROP TABLE IF EXISTS answers; DROP TABLE IF EXISTS violations; DROP TABLE IF EXISTS refresh_tokens;'"
+    "db:reset": "wrangler d1 execute exam-platform-db --local --file=../database/reset.sql",
+    "smoke:api": "node ./scripts/smoke-api.mjs"
   },
   "dependencies": {
     "@tsndr/cloudflare-worker-jwt": "^2.5.0",

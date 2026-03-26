@@ -1,13 +1,18 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { examAPI } from '../utils/api.js'
 
 const STORAGE_KEY = (eventId) => `exam_state_${eventId}`
+
+const getDurationSeconds = (durationMinutes) => {
+  const mins = Number(durationMinutes)
+  if (!Number.isFinite(mins) || mins <= 0) return 0
+  return Math.floor(mins * 60)
+}
 
 export function useExam(eventId, questions, totalDurationMinutes, onAutoSubmit, isStarted = true) {
   const [answers, setAnswers] = useState({}) // { questionId: selectedOption }
   const [currentIndex, setCurrentIndex] = useState(0)
   const [markedForReview, setMarkedForReview] = useState(new Set())
-  const [timeRemaining, setTimeRemaining] = useState(totalDurationMinutes * 60)
+  const [timeRemaining, setTimeRemaining] = useState(getDurationSeconds(totalDurationMinutes))
   const [startTime, setStartTime] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const timerRef = useRef(null)
@@ -15,7 +20,12 @@ export function useExam(eventId, questions, totalDurationMinutes, onAutoSubmit, 
 
   // Load saved state from localStorage
   useEffect(() => {
-    if (!eventId || !questions?.length) return
+    if (!eventId) return
+
+    setAnswers({})
+    setCurrentIndex(0)
+    setMarkedForReview(new Set())
+    setStartTime(null)
 
     const saved = localStorage.getItem(STORAGE_KEY(eventId))
     if (saved) {
@@ -25,13 +35,30 @@ export function useExam(eventId, questions, totalDurationMinutes, onAutoSubmit, 
         if (state.markedForReview) setMarkedForReview(new Set(state.markedForReview))
         if (state.timeRemaining && state.timeRemaining > 0) {
           setTimeRemaining(state.timeRemaining)
+        } else {
+          setTimeRemaining(0)
         }
         if (state.currentIndex !== undefined) setCurrentIndex(state.currentIndex)
       } catch (e) {
         console.error('Failed to restore exam state:', e)
+        setTimeRemaining(0)
       }
+    } else {
+      setTimeRemaining(0)
     }
-  }, [eventId, questions])
+  }, [eventId])
+
+  // Initialize/clamp timer when event duration loads
+  useEffect(() => {
+    if (!eventId) return
+    const durationSeconds = getDurationSeconds(totalDurationMinutes)
+    if (!durationSeconds) return
+
+    setTimeRemaining(prev => {
+      if (!prev || prev <= 0) return durationSeconds
+      return Math.min(prev, durationSeconds)
+    })
+  }, [eventId, totalDurationMinutes])
 
   // Timer countdown
   useEffect(() => {

@@ -9,6 +9,7 @@ import { authMiddleware } from '../middleware/auth.js';
 import { setCookie, getCookie, deleteCookie } from 'hono/cookie';
 import { verifyGoogleIdToken } from '../utils/google.js';
 import { turnstileOptional } from '../middleware/turnstile.js';
+import { getAuthCookieOptions, getCookieClearOptions } from '../utils/cookies.js';
 
 export const authRoutes = new Hono();
 
@@ -23,6 +24,12 @@ const INDIAN_STATES = [
 ];
 
 const VALID_ASPIRANT_TYPES = ['JEE-MAINS', 'JEE-ADV', 'NEET', 'MHT-CET'];
+
+function clearAuthCookies(c) {
+  const clearOptions = getCookieClearOptions(c);
+  deleteCookie(c, 'refresh_token', clearOptions);
+  deleteCookie(c, 'access_token', clearOptions);
+}
 
 // POST /api/register
 authRoutes.post('/register', registerRateLimit, turnstileOptional, async (c) => {
@@ -148,12 +155,8 @@ authRoutes.post('/login', loginRateLimit, async (c) => {
       c.env.JWT_SECRET
     );
 
-    setCookie(c, 'access_token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    const authCookieOptions = getAuthCookieOptions(c);
+    setCookie(c, 'access_token', token, authCookieOptions);
 
     try {
       const refreshId = crypto.getRandomValues(new Uint8Array(16));
@@ -165,12 +168,7 @@ authRoutes.post('/login', loginRateLimit, async (c) => {
         'INSERT INTO refresh_tokens (user_id, token_hash) VALUES (?, ?)'
       ).bind(user.id, refreshHash).run();
 
-      setCookie(c, 'refresh_token', refreshRaw, {
-        httpOnly: true,
-        secure: true,
-        sameSite: 'Lax',
-        path: '/',
-      });
+      setCookie(c, 'refresh_token', refreshRaw, authCookieOptions);
     } catch (e) {
       console.warn('Refresh token insert failed, proceeding without refresh:', e);
     }
@@ -251,12 +249,8 @@ authRoutes.post('/oauth/google', async (c) => {
       c.env.JWT_SECRET
     );
 
-    setCookie(c, 'access_token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    const authCookieOptions = getAuthCookieOptions(c);
+    setCookie(c, 'access_token', token, authCookieOptions);
 
     const refreshId = crypto.getRandomValues(new Uint8Array(16));
     const refreshRaw = Array.from(refreshId).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -267,12 +261,7 @@ authRoutes.post('/oauth/google', async (c) => {
       'INSERT INTO refresh_tokens (user_id, token_hash) VALUES (?, ?)'
     ).bind(user.id, refreshHash).run();
 
-    setCookie(c, 'refresh_token', refreshRaw, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    setCookie(c, 'refresh_token', refreshRaw, authCookieOptions);
 
     return c.json({
       success: true,
@@ -334,8 +323,7 @@ authRoutes.post('/refresh', async (c) => {
     ).bind(refreshHash).first();
 
     if (!record || record.revoked_at) {
-      deleteCookie(c, 'refresh_token');
-      deleteCookie(c, 'access_token');
+      clearAuthCookies(c);
       return c.json({ error: 'Invalid refresh token' }, 401);
     }
 
@@ -351,12 +339,8 @@ authRoutes.post('/refresh', async (c) => {
       { userId: user.id, username: user.username, isAdmin: !!user.is_admin },
       c.env.JWT_SECRET
     );
-    setCookie(c, 'access_token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    const authCookieOptions = getAuthCookieOptions(c);
+    setCookie(c, 'access_token', token, authCookieOptions);
 
     const newId = crypto.getRandomValues(new Uint8Array(16));
     const newRaw = Array.from(newId).map(b => b.toString(16).padStart(2, '0')).join('');
@@ -369,12 +353,7 @@ authRoutes.post('/refresh', async (c) => {
       c.env.DB.prepare('INSERT INTO refresh_tokens (user_id, token_hash, rotated_from) VALUES (?, ?, ?)').bind(user.id, newHash, refreshHash)
     ]);
 
-    setCookie(c, 'refresh_token', newRaw, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    setCookie(c, 'refresh_token', newRaw, authCookieOptions);
     return c.json({ success: true });
   } catch (e) {
     console.error('Refresh error:', e);
@@ -392,8 +371,7 @@ authRoutes.post('/logout', async (c) => {
         'UPDATE refresh_tokens SET revoked_at = ? WHERE token_hash = ?'
       ).bind(new Date().toISOString(), refreshHash).run();
     }
-    deleteCookie(c, 'refresh_token');
-    deleteCookie(c, 'access_token');
+    clearAuthCookies(c);
     return c.json({ success: true });
   } catch (e) {
     console.error('Logout error:', e);

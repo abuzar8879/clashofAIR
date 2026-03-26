@@ -47,13 +47,13 @@ export default function QuestionArea({
         {OPTION_KEYS.map((key, i) => {
           const optionText = question[OPTION_FIELDS[i]]
           if (!optionText) return null
-          const isSelected = selectedAnswer === key
+          const isSelected = selectedAnswer === optionText || selectedAnswer === key
 
           return (
             <li
               key={key}
               className={`option-item ${isSelected ? 'selected' : ''}`}
-              onClick={() => onSelect(question.id, key)}
+              onClick={() => onSelect(question.id, optionText)}
             >
               <span className="option-key">{key}</span>
               <span className="option-text">{optionText}</span>

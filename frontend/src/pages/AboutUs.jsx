@@ -9,7 +9,7 @@ export default function AboutUs() {
         <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>Our Mission</h2>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8 }}>
           clashofAIR is India's most realistic computer-based mock exam platform designed specifically for students 
-          preparing for JEE, NEET-UG, NEET-PG, MHT-CET, CAT, and other competitive examinations.
+          preparing for JEE-MAINS, JEE-ADV, NEET, and MHT-CET.
         </p>
         <p style={{ color: 'var(--text-secondary)', lineHeight: 1.8, marginTop: '12px' }}>
           Our goal is to give every student access to a fair, pressure-filled, realistic exam simulation — 
@@ -45,12 +45,11 @@ export default function AboutUs() {
         <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '12px' }}>Supported Examinations</h2>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
           {[
-            { name: 'JEE Main & Advanced', desc: 'Joint Entrance Examination for IITs/NITs' },
-            { name: 'NEET-UG', desc: 'National Eligibility cum Entrance Test — MBBS/BDS' },
-            { name: 'NEET-PG', desc: 'Postgraduate Medical Entrance Examination' },
+            { name: 'JEE-MAINS', desc: 'Joint Entrance Examination Main for engineering admissions' },
+            { name: 'JEE-ADV', desc: 'Joint Entrance Examination Advanced for IIT admissions' },
+            { name: 'NEET', desc: 'National Eligibility cum Entrance Test for medical admissions' },
             { name: 'MHT-CET', desc: 'Maharashtra Common Entrance Test' },
-            { name: 'CAT', desc: 'Common Admission Test for IIMs' },
-          ].map(({ name, desc }) => (
+            ].map(({ name, desc }) => (
             <div key={name} style={{ padding: '12px', background: 'var(--bg-secondary)', borderRadius: '4px', border: '1px solid var(--border)' }}>
               <div style={{ fontWeight: '600', marginBottom: '4px', fontSize: '14px' }}>{name}</div>
               <div style={{ color: 'var(--text-secondary)', fontSize: '12px' }}>{desc}</div>

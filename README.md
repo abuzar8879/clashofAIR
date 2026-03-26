@@ -90,10 +90,19 @@ npm run dev
 ## 📡 API Reference
 
 - **Auth**: `/api/login`, `/api/register`, `/api/me`
-- **Events**: `/api/events` (protected), `/api/events/:id`
+- **Events**: `/api/events` (public visible events), `/api/events/:id`
 - **Exam**: `/api/register-event`, `/api/submit-exam`, `/api/violations`
 - **Results**: `/api/leaderboard/:eventId` (locked until end), `/api/result/:eventId`
 - **Admin**: Full suite of management APIs for users, events, and questions.
+
+### API Smoke Check
+
+With backend dev server running (`wrangler dev`), run:
+
+```bash
+cd backend
+npm run smoke:api
+```
 
 ## 📊 CSV Import Format
 

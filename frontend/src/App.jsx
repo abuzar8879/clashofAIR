@@ -2,6 +2,7 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ThemeProvider } from './context/ThemeContext.jsx'
+import { ToastProvider } from './context/ToastContext.jsx'
 import Navbar from './components/Navbar.jsx'
 import Footer from './components/Footer.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
@@ -11,6 +12,7 @@ import EventDetail from './pages/EventDetail.jsx'
 import Login from './pages/Login.jsx'
 import Register from './pages/Register.jsx'
 import Profile from './pages/Profile.jsx'
+import ProfileResults from './pages/ProfileResults.jsx'
 import AboutUs from './pages/AboutUs.jsx'
 import ExamInterface from './pages/ExamInterface.jsx'
 import AdminDashboard from './pages/admin/AdminDashboard.jsx'
@@ -23,8 +25,9 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
-          <Routes>
+        <ToastProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Exam interface - no navbar */}
             <Route path="/exam/:eventId" element={
               <ProtectedRoute>
@@ -87,9 +90,17 @@ function App() {
                 </ProtectedRoute>
               </WithNavbar>
             } />
+            <Route path="/profile/results" element={
+              <WithNavbar>
+                <ProtectedRoute>
+                  <ProfileResults />
+                </ProtectedRoute>
+              </WithNavbar>
+            } />
             <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </BrowserRouter>
+            </Routes>
+          </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   )

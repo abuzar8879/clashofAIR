@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { resultsAPI } from '../utils/api.js'
-import { formatDuration, formatDateTime } from '../utils/helpers.js'
+import { formatDuration, formatDateTime, formatDate } from '../utils/helpers.js'
 
 export default function ResultCard({ eventId }) {
   const [data, setData] = useState(null)

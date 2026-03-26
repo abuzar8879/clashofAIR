@@ -3,9 +3,11 @@ import { Link, useNavigate } from 'react-router-dom'
 import { formatDate, formatDuration, getExamTypeBadgeClass, getEventStatus } from '../utils/helpers.js'
 import { examAPI } from '../utils/api.js'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 
 export default function EventCard({ event, onRegisterSuccess }) {
   const { user } = useAuth()
+  const { showError, showSuccess } = useToast()
   const navigate = useNavigate()
   const [loading, setLoading] = React.useState(false)
 
@@ -27,8 +29,9 @@ export default function EventCard({ event, onRegisterSuccess }) {
     try {
       await examAPI.register(event.id)
       onRegisterSuccess && onRegisterSuccess(event.id)
+      showSuccess('Registered successfully. You can attempt when the exam goes live.')
     } catch (err) {
-      alert(err?.response?.data?.error || 'Failed to register')
+      showError(err?.response?.data?.error || 'Failed to register')
     } finally {
       setLoading(false)
     }

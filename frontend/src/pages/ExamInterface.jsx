@@ -6,6 +6,7 @@ import { useAntiCheat } from '../hooks/useAntiCheat.js'
 import QuestionArea from '../components/QuestionArea.jsx'
 import OMRPanel from '../components/OMRPanel.jsx'
 import Timer from '../components/Timer.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 
 export default function ExamInterface() {
   const { eventId } = useParams()
@@ -18,6 +19,7 @@ export default function ExamInterface() {
   const [submitResult, setSubmitResult] = useState(null)
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false)
   const [isStarted, setIsStarted] = useState(false)
+  const { showError } = useToast()
 
   const handleAutoSubmit = useCallback(async (currentAnswers) => {
     await submitExam(currentAnswers || {})
@@ -30,7 +32,7 @@ export default function ExamInterface() {
     goToQuestion, goNext, goPrev,
     getQuestionState, getStats, getTimeTaken,
     clearSavedState, currentQuestion,
-  } = useExam(eventId, questions, event?.duration || 60, handleAutoSubmit, isStarted)
+  } = useExam(eventId, questions, event?.duration, handleAutoSubmit, isStarted)
 
   const {
     showWarning, warningMessage, violationCount, dismissWarning, requestFullscreen,
@@ -64,15 +66,42 @@ export default function ExamInterface() {
     setIsStarted(true)
   }
 
+  const buildSubmissionAnswers = useCallback((inputAnswers = {}) => {
+    const normalized = {}
+
+    for (const [questionId, selected] of Object.entries(inputAnswers)) {
+      if (selected === null || selected === undefined) continue
+
+      const selectedValue = String(selected).trim()
+      if (!selectedValue) continue
+
+      // Backward compatibility: convert legacy key answers (A/B/C/D) to option text
+      if (/^[A-D]$/i.test(selectedValue)) {
+        const question = questions.find(q => String(q.id) === String(questionId))
+        if (question) {
+          const optionText = question[`option_${selectedValue.toLowerCase()}`]
+          normalized[questionId] = optionText ? String(optionText) : selectedValue.toUpperCase()
+        } else {
+          normalized[questionId] = selectedValue.toUpperCase()
+        }
+      } else {
+        normalized[questionId] = selectedValue
+      }
+    }
+
+    return normalized
+  }, [questions])
+
   const submitExam = async (currentAnswers) => {
     if (isSubmitting || submitted) return
     setIsSubmitting(true)
     setShowSubmitConfirm(false)
     try {
       const timeTaken = getTimeTaken()
+      const submissionAnswers = buildSubmissionAnswers(currentAnswers || answers)
       const res = await examAPI.submit({
         event_id: Number(eventId),
-        answers: currentAnswers || answers,
+        answers: submissionAnswers,
         time_taken: timeTaken,
       })
       clearSavedState()
@@ -88,7 +117,7 @@ export default function ExamInterface() {
         setSubmitted(true)
         navigate(`/events/${eventId}`)
       } else {
-        alert(msg)
+        showError(msg)
       }
     } finally {
       setIsSubmitting(false)

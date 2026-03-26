@@ -2,8 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { AdminLayout } from './AdminLayout.jsx'
 import { adminAPI } from '../../utils/api.js'
 import { formatDateTime, getExamTypeBadgeClass, getErrorMessage } from '../../utils/helpers.js'
+import ConfirmModal from '../../components/ConfirmModal.jsx'
+import { useToast } from '../../context/ToastContext.jsx'
 
 export default function AdminUsers() {
+  const { showError, showSuccess } = useToast()
   const [users, setUsers] = useState([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
@@ -13,6 +16,7 @@ export default function AdminUsers() {
   const [attemptsModal, setAttemptsModal] = useState(null)
   const [attempts, setAttempts] = useState([])
   const [error, setError] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
     loadUsers()
@@ -32,13 +36,16 @@ export default function AdminUsers() {
     }
   }
 
-  const handleDelete = async (id, username) => {
-    if (!confirm(`Delete user "${username}"? This will remove all their data.`)) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
     try {
-      await adminAPI.deleteUser(id)
+      await adminAPI.deleteUser(deleteTarget.id)
+      showSuccess(`Deleted user "${deleteTarget.username}"`)
       loadUsers()
     } catch (err) {
-      alert(getErrorMessage(err))
+      showError(getErrorMessage(err))
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
@@ -55,6 +62,16 @@ export default function AdminUsers() {
   return (
     <AdminLayout title="User Management">
       {error && <div className="alert alert-error">{error}</div>}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete User?"
+        message={deleteTarget ? `Delete user "${deleteTarget.username}"? This will remove all their data.` : ''}
+        confirmText="Delete User"
+        cancelText="Cancel"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Attempts Modal */}
       {attemptsModal && (
@@ -153,7 +170,7 @@ export default function AdminUsers() {
                           <button
                             className="btn-danger"
                             style={{ fontSize: '11px', padding: '3px 8px' }}
-                            onClick={() => handleDelete(user.id, user.username)}
+                            onClick={() => setDeleteTarget({ id: user.id, username: user.username })}
                           >
                             Delete
                           </button>

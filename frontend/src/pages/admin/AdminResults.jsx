@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { AdminLayout } from './AdminLayout.jsx'
-import { adminAPI } from '../../utils/api.js'
+import api, { adminAPI } from '../../utils/api.js'
 import { formatDateTime, getExamTypeBadgeClass, getErrorMessage } from '../../utils/helpers.js'
+import { useToast } from '../../context/ToastContext.jsx'
 
 export default function AdminResults() {
+  const { showError, showSuccess } = useToast()
   const [events, setEvents] = useState([])
   const [selectedEvent, setSelectedEvent] = useState('')
   const [results, setResults] = useState([])
@@ -38,18 +40,17 @@ export default function AdminResults() {
 
   const handleExport = () => {
     if (!selectedEvent) return
-    const token = localStorage.getItem('token')
-    const url = adminAPI.exportCSV(selectedEvent)
-    // Open with auth header via a fetch and blob
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.blob())
+    api.get(`/admin/export/${selectedEvent}`, { responseType: 'blob' })
+      .then(res => res.data)
       .then(blob => {
         const link = document.createElement('a')
         link.href = URL.createObjectURL(blob)
         link.download = `results-event-${selectedEvent}.csv`
         link.click()
+        URL.revokeObjectURL(link.href)
+        showSuccess('CSV exported successfully')
       })
-      .catch(() => alert('Failed to export CSV'))
+      .catch((err) => showError(getErrorMessage(err) || 'Failed to export CSV'))
   }
 
   return (

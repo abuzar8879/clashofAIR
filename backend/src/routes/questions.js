@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { adminOnly } from '../middleware/adminOnly.js';
+import { getSubjectsOrder } from '../utils/subjects.js';
 
 export const questionRoutes = new Hono();
 
@@ -90,15 +91,7 @@ questionRoutes.get('/questions/:eventId', authMiddleware, async (c) => {
     }, {})
 
     // Determine subject order from event.subjects_config
-    let subjectOrder = []
-    try {
-      if (event.subjects_config) {
-        const config = JSON.parse(event.subjects_config)
-        subjectOrder = Object.keys(config)
-      }
-    } catch (e) {
-      console.warn('Failed to parse subjects_config for sorting:', e)
-    }
+    const subjectOrder = getSubjectsOrder(event.subjects_config)
 
     // Include any subjects found in questions but not in config
     const allSubjects = [...new Set([...subjectOrder, ...Object.keys(subjectGroups)])]

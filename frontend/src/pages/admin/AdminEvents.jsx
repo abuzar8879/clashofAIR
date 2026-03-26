@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import { AdminLayout } from './AdminLayout.jsx'
 import { eventsAPI, adminAPI } from '../../utils/api.js'
 import { formatDateTime, EXAM_TYPES, getErrorMessage } from '../../utils/helpers.js'
+import ConfirmModal from '../../components/ConfirmModal.jsx'
+import { useToast } from '../../context/ToastContext.jsx'
 
 const EMPTY_FORM = {
   title: '', exam_type: '', date: '', duration: '',
@@ -9,7 +11,22 @@ const EMPTY_FORM = {
   subjects_config: [] // Array of { name, question_count, positive_marks, negative_marks }
 }
 
+function normalizeSubjectsConfig(input) {
+  if (!input) return []
+  if (Array.isArray(input)) return input
+  if (typeof input === 'object') {
+    return Object.entries(input).map(([name, cfg]) => ({
+      name,
+      question_count: cfg?.question_count ?? cfg?.questions ?? 0,
+      positive_marks: cfg?.positive_marks ?? 1,
+      negative_marks: cfg?.negative_marks ?? 0,
+    }))
+  }
+  return []
+}
+
 export default function AdminEvents() {
+  const { showError, showSuccess } = useToast()
   const [events, setEvents] = useState([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -18,6 +35,7 @@ export default function AdminEvents() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => { loadEvents() }, [])
 
@@ -36,7 +54,8 @@ export default function AdminEvents() {
   const handleEdit = (event) => {
     let subjects = []
     try {
-      subjects = event.subjects_config ? (typeof event.subjects_config === 'string' ? JSON.parse(event.subjects_config) : event.subjects_config) : []
+      const parsed = event.subjects_config ? (typeof event.subjects_config === 'string' ? JSON.parse(event.subjects_config) : event.subjects_config) : []
+      subjects = normalizeSubjectsConfig(parsed)
     } catch (e) { console.error('Parse subjects error', e) }
 
     setEditEvent(event)
@@ -108,27 +127,33 @@ export default function AdminEvents() {
       if (editEvent) {
         await eventsAPI.update(editEvent.id, payload)
         setSuccess('Test updated successfully')
+        showSuccess('Test updated successfully')
       } else {
         await eventsAPI.create(payload)
         setSuccess('Test created successfully')
+        showSuccess('Test created successfully')
       }
       setShowForm(false)
       await loadEvents()
       setTimeout(() => setSuccess(''), 3000)
     } catch (err) {
       setError(getErrorMessage(err))
+      showError(getErrorMessage(err))
     } finally {
       setSaving(false)
     }
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this test? This will also delete all questions, registrations, and submissions.')) return
+  const handleDelete = async () => {
+    if (!deleteTarget) return
     try {
-      await eventsAPI.delete(id)
+      await eventsAPI.delete(deleteTarget.id)
+      showSuccess(`Deleted test "${deleteTarget.title}"`)
       await loadEvents()
     } catch (err) {
-      alert(getErrorMessage(err))
+      showError(getErrorMessage(err))
+    } finally {
+      setDeleteTarget(null)
     }
   }
 
@@ -136,6 +161,16 @@ export default function AdminEvents() {
     <AdminLayout title="Tests Management">
       {success && <div className="alert alert-success">{success}</div>}
       {error && !showForm && <div className="alert alert-error">{error}</div>}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Test?"
+        message={deleteTarget ? `Delete "${deleteTarget.title}"? This also removes related questions, registrations, and submissions.` : ''}
+        confirmText="Delete Test"
+        cancelText="Cancel"
+        danger
+        onConfirm={handleDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       <div style={{ marginBottom: '20px' }}>
         <button className="btn-primary" onClick={handleCreate}>+ Create Test</button>
@@ -297,7 +332,7 @@ export default function AdminEvents() {
                       <button
                         className="btn-danger"
                         style={{ fontSize: '12px', padding: '4px 10px' }}
-                        onClick={() => handleDelete(event.id)}
+                        onClick={() => setDeleteTarget({ id: event.id, title: event.title })}
                       >
                         Delete
                       </button>

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS events (
   date DATETIME NOT NULL,
   duration INTEGER NOT NULL,
   question_count INTEGER NOT NULL,
+  is_visible INTEGER NOT NULL DEFAULT 1,
   subjects_config TEXT,
   created_by INTEGER,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

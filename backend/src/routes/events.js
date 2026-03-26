@@ -5,7 +5,7 @@ import { adminOnly } from '../middleware/adminOnly.js';
 export const eventRoutes = new Hono();
 
 // GET /api/events - List all visible events
-eventRoutes.get('/events', authMiddleware, async (c) => {
+eventRoutes.get('/events', optionalAuth, async (c) => {
   try {
     const user = c.get('user');
     const { exam_type, page = 1, limit = 20 } = c.req.query();
@@ -57,7 +57,7 @@ eventRoutes.get('/events', authMiddleware, async (c) => {
 });
 
 // GET /api/events/:id - Single event
-eventRoutes.get('/events/:id', authMiddleware, async (c) => {
+eventRoutes.get('/events/:id', optionalAuth, async (c) => {
   try {
     const user = c.get('user');
     const eventId = parseInt(c.req.param('id'));

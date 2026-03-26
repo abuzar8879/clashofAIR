@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth.js';
 import { recalculatePercentileAndRank } from '../utils/percentile.js';
+import { normalizeSubjectsConfig } from '../utils/subjects.js';
 
 export const examRoutes = new Hono();
 
@@ -147,17 +148,14 @@ examRoutes.post('/submit-exam', authMiddleware, async (c) => {
 
     // Get all questions with correct answers
     const questionsResult = await c.env.DB.prepare(
-      'SELECT id, subject, correct_answer FROM questions WHERE event_id = ?'
+      'SELECT id, subject, option_a, option_b, option_c, option_d, correct_answer FROM questions WHERE event_id = ?'
     ).bind(eventId).all();
     const questions = questionsResult.results || [];
 
-    // Parse subject config
-    let subjects = [];
-    try {
-      subjects = event.subjects_config ? (typeof event.subjects_config === 'string' ? JSON.parse(event.subjects_config) : event.subjects_config) : [];
-    } catch (e) {
-      console.error('Failed to parse subjects_config', e);
-    }
+    const subjects = normalizeSubjectsConfig(event.subjects_config);
+    const subjectsByName = new Map(
+      subjects.map(subject => [subject.name.toLowerCase(), subject])
+    );
 
     // Mark questions
     let totalScore = 0;
@@ -165,14 +163,24 @@ examRoutes.post('/submit-exam', authMiddleware, async (c) => {
     let incorrectCount = 0;
 
     for (const question of questions) {
-      const selectedOption = answers[question.id.toString()];
+      const selectedOptionRaw = answers[question.id.toString()];
+      const selectedOption = selectedOptionRaw === null || selectedOptionRaw === undefined
+        ? ''
+        : String(selectedOptionRaw).trim();
       if (selectedOption) {
         // Find subject marking rules
-        const subConfig = subjects.find(s => s.name === question.subject) || { positive_marks: 1, negative_marks: 0 };
+        const subjectName = String(question.subject || '').toLowerCase();
+        const subConfig = subjectsByName.get(subjectName) || { positive_marks: 1, negative_marks: 0 };
         const pos = Number(subConfig.positive_marks || 1);
         const neg = Number(subConfig.negative_marks || 0);
 
-        if (selectedOption.toUpperCase() === question.correct_answer.toUpperCase()) {
+        const correctKey = String(question.correct_answer || '').toUpperCase();
+        const correctText = String(question[`option_${correctKey.toLowerCase()}`] || '').trim();
+        const selectedKey = selectedOption.toUpperCase();
+        const isLegacyKey = /^[A-D]$/.test(selectedKey);
+        const isCorrect = isLegacyKey ? selectedKey === correctKey : selectedOption === correctText;
+
+        if (isCorrect) {
           correctCount++;
           totalScore += pos;
         } else {
@@ -204,7 +212,7 @@ examRoutes.post('/submit-exam', authMiddleware, async (c) => {
       'INSERT INTO answers (submission_id, question_id, selected_option) VALUES (?, ?, ?)'
     );
     const batch = Object.entries(answers).map(([questionId, selectedOption]) => 
-      answerStmt.bind(submissionId, Number(questionId), selectedOption)
+      answerStmt.bind(submissionId, Number(questionId), selectedOption === null || selectedOption === undefined ? null : String(selectedOption))
     );
     
     if (batch.length > 0) {

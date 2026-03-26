@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { AdminLayout } from './AdminLayout.jsx'
 import { questionsAPI, adminAPI } from '../../utils/api.js'
 import { parseCSV, getErrorMessage } from '../../utils/helpers.js'
+import ConfirmModal from '../../components/ConfirmModal.jsx'
+import { useToast } from '../../context/ToastContext.jsx'
 
 const EMPTY_FORM = {
   event_id: '', subject: '', question_text: '', option_a: '', option_b: '',
@@ -9,6 +11,7 @@ const EMPTY_FORM = {
 }
 
 export default function AdminQuestions() {
+  const { showError, showSuccess, showWarning } = useToast()
   const [events, setEvents] = useState([])
   const [questions, setQuestions] = useState([])
   const [selectedEvent, setSelectedEvent] = useState('')
@@ -21,9 +24,12 @@ export default function AdminQuestions() {
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [csvImporting, setCsvImporting] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState(null)
 
   useEffect(() => {
-    adminAPI.getEvents().then(res => setEvents(res.data.events || [])).catch(console.error)
+    adminAPI.getEvents()
+      .then(res => setEvents(res.data.events || []))
+      .catch(err => showError(getErrorMessage(err)))
   }, [])
 
   useEffect(() => {
@@ -53,7 +59,9 @@ export default function AdminQuestions() {
     if (!ev || !ev.subjects_config) return []
     try {
       const config = typeof ev.subjects_config === 'string' ? JSON.parse(ev.subjects_config) : ev.subjects_config
-      return Array.isArray(config) ? config.map(s => s.name) : []
+      if (Array.isArray(config)) return config.map(s => s.name).filter(Boolean)
+      if (config && typeof config === 'object') return Object.keys(config)
+      return []
     } catch (e) { return [] }
   }, [selectedEvent, events])
 
@@ -113,32 +121,33 @@ export default function AdminQuestions() {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this question?')) return
+    if (!id) return
     try {
       await questionsAPI.delete(id)
       setQuestions(prev => prev.filter(q => q.id !== id))
+      showSuccess('Question deleted')
     } catch (err) {
-      alert(getErrorMessage(err))
+      showError(getErrorMessage(err))
     }
   }
 
   const handleCSVUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file || !selectedEvent) {
-      alert('Please select a test first, then upload CSV')
+      showWarning('Please select a test first, then upload CSV')
       return
     }
     
     // Check if a subject is selected if subjects exist for this test
     if (currentEventSubjects.length > 0 && !selectedSubject) {
-      alert('Please select a subject from the dropdown before importing questions for that subject.')
+      showWarning('Please select a subject from the dropdown before importing questions for that subject.')
       return
     }
 
     const text = await file.text()
     const parsed = parseCSV(text)
     if (!parsed.length) {
-      alert('No valid questions found in CSV. Required columns: question_text, option_a, option_b, option_c, option_d, correct_answer')
+      showWarning('No valid questions found in CSV. Required columns: question_text, option_a, option_b, option_c, option_d, correct_answer')
       return
     }
 
@@ -158,7 +167,7 @@ export default function AdminQuestions() {
       loadQuestions(selectedEvent)
       setTimeout(() => setSuccess(''), 5000)
     } catch (err) {
-      alert(getErrorMessage(err))
+      showError(getErrorMessage(err))
     } finally {
       setCsvImporting(false)
       e.target.value = ''
@@ -171,6 +180,20 @@ export default function AdminQuestions() {
     <AdminLayout title="Questions Management">
       {success && <div className="alert alert-success">{success}</div>}
       {error && !showForm && <div className="alert alert-error">{error}</div>}
+      <ConfirmModal
+        open={!!deleteTarget}
+        title="Delete Question?"
+        message="This action will permanently remove the selected question."
+        confirmText="Delete Question"
+        cancelText="Cancel"
+        danger
+        onConfirm={() => {
+          const id = deleteTarget
+          setDeleteTarget(null)
+          handleDelete(id)
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Filter row */}
       <div className="filter-row">
@@ -337,7 +360,7 @@ export default function AdminQuestions() {
                   </div>
                   <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
                     <button className="btn-secondary" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => handleEdit(q)}>Edit</button>
-                    <button className="btn-danger" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => handleDelete(q.id)}>Delete</button>
+                    <button className="btn-danger" style={{ fontSize: '12px', padding: '4px 10px' }} onClick={() => setDeleteTarget(q.id)}>Delete</button>
                   </div>
                 </div>
               </div>

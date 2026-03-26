@@ -1,4 +1,5 @@
 import { setCookie, getCookie } from 'hono/cookie';
+import { getClientCookieOptions } from '../utils/cookies.js';
 
 function randomHex(bytes) {
   const arr = crypto.getRandomValues(new Uint8Array(bytes));
@@ -9,12 +10,7 @@ export async function csrfProtection(c, next) {
   let csrf = getCookie(c, 'csrf_token');
   if (!csrf) {
     csrf = randomHex(16);
-    setCookie(c, 'csrf_token', csrf, {
-      httpOnly: false,
-      secure: true,
-      sameSite: 'Lax',
-      path: '/',
-    });
+    setCookie(c, 'csrf_token', csrf, getClientCookieOptions(c));
     await next();
     return;
   }

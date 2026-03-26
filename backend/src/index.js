@@ -10,9 +10,17 @@ import { examRoutes } from './routes/exam.js';
 import { resultRoutes } from './routes/results.js';
 import { adminRoutes } from './routes/admin.js';
 import { csrfProtection } from './middleware/csrf.js';
+import { ensureDbReady } from './middleware/dbReady.js';
 
 const app = new Hono();
 console.log('API initialized');
+
+app.use('*', async (c, next) => {
+  const requestId = c.req.header('X-Request-Id') || crypto.randomUUID();
+  c.set('requestId', requestId);
+  c.header('X-Request-Id', requestId);
+  await next();
+});
 
 // CORS middleware
 app.use('*', async (c, next) => {
@@ -35,9 +43,10 @@ app.use('*', async (c, next) => {
   return corsMiddleware(c, next);
 });
 
+app.use('/api/*', ensureDbReady());
 app.use('*', csrfProtection);
 // Health check
-app.get('/', (c) => c.text('API running 🚀'));
+app.get('/', (c) => c.text('API running'));
 app.get('/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
 // Routes
@@ -53,8 +62,13 @@ app.notFound((c) => c.json({ error: 'Route not found' }, 404));
 
 // Error handler
 app.onError((err, c) => {
-  console.error('Unhandled error:', err);
-  return c.json({ error: 'Internal server error' }, 500);
+  const requestId = c.get('requestId') || 'unknown';
+  console.error(`[${requestId}] Unhandled error`, {
+    method: c.req.method,
+    path: c.req.path,
+    error: err,
+  });
+  return c.json({ error: 'Internal server error', requestId }, 500);
 });
 
 export default app;

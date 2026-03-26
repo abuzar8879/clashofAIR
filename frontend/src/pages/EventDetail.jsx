@@ -5,11 +5,13 @@ import { useAuth } from '../context/AuthContext.jsx'
 import Leaderboard from '../components/Leaderboard.jsx'
 import ResultCard from '../components/ResultCard.jsx'
 import { formatDateTime, formatDuration, getEventStatus, getExamTypeBadgeClass } from '../utils/helpers.js'
+import { useToast } from '../context/ToastContext.jsx'
 
 export default function EventDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { showError, showSuccess } = useToast()
   const [event, setEvent] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -38,8 +40,9 @@ export default function EventDetail() {
     try {
       await examAPI.register(Number(id))
       await loadEvent()
+      showSuccess('Registered successfully. We will unlock the exam at start time.')
     } catch (err) {
-      alert(err?.response?.data?.error || 'Failed to register')
+      showError(err?.response?.data?.error || 'Failed to register')
     } finally {
       setRegistering(false)
     }
@@ -96,7 +99,7 @@ export default function EventDetail() {
     if (!event.isRegistered) {
       return (
         <div style={{ textAlign: 'center', padding: '60px 20px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--primary)' }}><i className="fa-solid fa-file-pen"></i></div>
+          <div style={{ fontSize: '48px', marginBottom: '16px', color: 'var(--current)' }}><i className="fa-solid fa-file-pen"></i></div>
           <h3 style={{ marginBottom: '8px' }}>{event.title}</h3>
           <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '14px', maxWidth: '400px', margin: '0 auto 24px' }}>
             Register now to participate in this mock exam. The exam will start at the scheduled time.

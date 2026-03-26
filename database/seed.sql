@@ -7,26 +7,26 @@
 INSERT OR IGNORE INTO users (username, email, state, aspirant_type, password_hash, is_admin)
 VALUES (
   'admin',
-  'admin@clashofAIR.com',
+  'admin@clashofair.com',
   'Maharashtra',
-  'Other',
-  '$2y$10$JjzzFSOo0TZ27/Y/ViS4SO2sDk3gx7pmyzXdp6uoaQjCYcqwQm4RO',
+  'JEE-MAINS',
+  '$2a$10$81GXhWSMmfTdwaDv74V/DOUVUq1HmXmtZ4.I/IwKet4Hp0ETibok.',
   1
 );
 
 -- -- Sample student accounts (password: Student@123)
 INSERT OR IGNORE INTO users (username, email, state, aspirant_type, password_hash, is_admin)
 VALUES
-  ('rahul_jee', 'rahul@example.com', 'Maharashtra', 'JEE-MAINS', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 0),
-  ('priya_neet', 'priya@example.com', 'Tamil Nadu', 'NEET', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 0),
-  ('aman_cet', 'aman@example.com', 'Delhi', 'MHT-CET', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 0);
+  ('rahul_jee', 'rahul@example.com', 'Maharashtra', 'JEE-MAINS', '$2a$10$ZOg41Y/URZem6sr9TowlsuubbASxytqEH1ZAXDAXenSYQcs.aDQ.K', 0),
+  ('priya_neet', 'priya@example.com', 'Tamil Nadu', 'NEET', '$2a$10$ZOg41Y/URZem6sr9TowlsuubbASxytqEH1ZAXDAXenSYQcs.aDQ.K', 0),
+  ('aman_cet', 'aman@example.com', 'Delhi', 'MHT-CET', '$2a$10$ZOg41Y/URZem6sr9TowlsuubbASxytqEH1ZAXDAXenSYQcs.aDQ.K', 0);
 
 -- Sample Events
 INSERT OR IGNORE INTO events (title, exam_type, date, duration, question_count, is_visible, subjects_config, created_by)
 VALUES
-  ('JEE Main Mock Test - January Series', 'JEE-MAINS', datetime('now', '+2 days'), 180, 10, 1, '{"Physics": {"questions": 3, "positive_marks": 4, "negative_marks": 1}, "Chemistry": {"questions": 3, "positive_marks": 4, "negative_marks": 1}, "Maths": {"questions": 4, "positive_marks": 4, "negative_marks": 1}}', 1),
-  ('NEET Grand Mock Test 2024', 'NEET', datetime('now', '+5 days'), 200, 10, 1, '{"Biology": {"questions": 4, "positive_marks": 4, "negative_marks": 1}, "Physics": {"questions": 3, "positive_marks": 4, "negative_marks": 1}, "Chemistry": {"questions": 3, "positive_marks": 4, "negative_marks": 1}}', 1),
-  ('MHT-CET Practice Test Series 1', 'MHT-CET', datetime('now', '+7 days'), 90, 10, 1, '{"Physics": {"questions": 3, "positive_marks": 2, "negative_marks": 0}, "Chemistry": {"questions": 3, "positive_marks": 2, "negative_marks": 0}, "Maths": {"questions": 4, "positive_marks": 2, "negative_marks": 0}}', 1);
+  ('JEE Main Mock Test - January Series', 'JEE-MAINS', datetime('now', '+2 days'), 180, 10, 1, '[{"name":"Physics","question_count":3,"positive_marks":4,"negative_marks":1},{"name":"Chemistry","question_count":3,"positive_marks":4,"negative_marks":1},{"name":"Maths","question_count":4,"positive_marks":4,"negative_marks":1}]', 1),
+  ('NEET Grand Mock Test 2024', 'NEET', datetime('now', '+5 days'), 200, 10, 1, '[{"name":"Biology","question_count":4,"positive_marks":4,"negative_marks":1},{"name":"Physics","question_count":3,"positive_marks":4,"negative_marks":1},{"name":"Chemistry","question_count":3,"positive_marks":4,"negative_marks":1}]', 1),
+  ('MHT-CET Practice Test Series 1', 'MHT-CET', datetime('now', '+7 days'), 90, 10, 1, '[{"name":"Physics","question_count":3,"positive_marks":2,"negative_marks":0},{"name":"Chemistry","question_count":3,"positive_marks":2,"negative_marks":0},{"name":"Maths","question_count":4,"positive_marks":2,"negative_marks":0}]', 1);
 
 -- JEE Questions (Event 1)
 INSERT OR IGNORE INTO questions (event_id, question_text, option_a, option_b, option_c, option_d, correct_answer, subject, explanation)
@@ -68,4 +68,4 @@ VALUES
   (3, 'The chemical formula of sodium hydroxide is:', 'NaOH', 'NaCl', 'Na2SO4', 'NaHCO3', 'A', 'Chemistry', 'Sodium hydroxide is NaOH, also known as caustic soda.'),
   (3, 'Ohm''s law states that V is proportional to:', 'Resistance', 'Current', 'Power', 'Charge', 'B', 'Physics', 'Ohm''s law: V = IR, so voltage V is directly proportional to current I.'),
   (3, 'Which number comes next in: 2, 6, 12, 20, 30, ?', '40', '42', '44', '48', 'B', 'Maths', 'Pattern: differences are 4,6,8,10,12... So 30+12=42'),
-  (3, 'The longest river in Maharashtra is:', 'Godavari', 'Krishna', 'Tapi', 'Bhima', 'A', 'General', 'The Godavari river is the longest river flowing through Maharashtra.');the longest river flowing through Maharashtra.');
+  (3, 'The longest river in Maharashtra is:', 'Godavari', 'Krishna', 'Tapi', 'Bhima', 'A', 'General', 'The Godavari river is the longest river flowing through Maharashtra.');
